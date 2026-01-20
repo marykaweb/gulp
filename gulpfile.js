@@ -36,16 +36,16 @@ function styles() {
         .pipe(autoprefixer({ cascade: false }))
         .pipe(
             cleanCSS({
-              level: {
-                1: {
-                  specialComments: 0
-                },
-                2: {
-                  restructureRules: false
+                level: {
+                    1: {
+                        specialComments: 0
+                    },
+                    2: {
+                        restructureRules: false
+                    }
                 }
-              }
             })
-          )
+        )
         .pipe(dest('dist/css'))
         .pipe(browserSync.stream());
 }
