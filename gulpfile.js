@@ -1,103 +1,137 @@
-const { src, dest, watch, parallel, series } = require('gulp');
+// Gulp
+const { src, dest, watch, series, parallel } = require('gulp');
+
+// Plugins
 const browserSync = require('browser-sync').create();
 const fileInclude = require('gulp-file-include');
-const sass = require('gulp-sass')(require('sass'));
+const gulpSass = require('gulp-sass')(require('sass'));
 const autoprefixer = require('gulp-autoprefixer');
 const cleanCSS = require('gulp-clean-css');
 const concat = require('gulp-concat');
-const uglify = require('gulp-uglify');
+const terser = require('gulp-terser');
 const babel = require('gulp-babel');
 const imagemin = require('gulp-imagemin');
 const webp = require('gulp-webp');
 const newer = require('gulp-newer');
-const del = require('del');
 const svgSprite = require('gulp-svg-sprite');
-const { deleteAsync } = require('del');
+const del = require('del');
+const ttf2woff2 = require('gulp-ttf2woff2');
 
-// HTML
+// Paths
+const paths = {
+    html: 'src/html/*.html',
+    scss: 'src/scss/style.scss',
+    js: 'src/js/*.js',
+    images: 'src/img/**/*.*',
+    svg: 'src/svg/*.svg',
+    fonts: 'src/fonts/*.ttf'
+};
+
+// ========================
+//        HTML
+// ========================
 function html() {
-    return src('src/html/*.html')
+    return src(paths.html)
         .pipe(fileInclude())
         .pipe(dest('dist'))
         .pipe(browserSync.stream());
 }
 
-// SCSS
+// ========================
+//        FONTS
+// ========================
+function fonts() {
+    return src(paths.fonts)
+        .pipe(ttf2woff2())
+        .pipe(dest('dist/fonts'));
+}
+
+// ========================
+//        STYLES
+// ========================
 function styles() {
-    return src('src/scss/style.scss')
-        .pipe(
-            sass({
-                includePaths: [
-                    'node_modules',
-                ]
-            }).on('error', sass.logError)
-        )
-        .pipe(sass.sync().on('error', sass.logError))
+    return src(paths.scss)
+        .pipe(gulpSass({
+            includePaths: ['node_modules']
+        }).on('error', gulpSass.logError))
         .pipe(autoprefixer({ cascade: false }))
-        .pipe(
-            cleanCSS({
-                level: {
-                    1: {
-                        specialComments: 0
-                    },
-                    2: {
-                        restructureRules: false
-                    }
-                }
-            })
-        )
+        .pipe(cleanCSS({
+            level: {
+                1: { specialComments: 0 },
+                2: { restructureRules: false }
+            }
+        }))
         .pipe(dest('dist/css'))
         .pipe(browserSync.stream());
 }
 
-// JS
-function scripts() {
+// ========================
+//     VENDOR SCRIPTS
+// ========================
+function vendorScripts() {
     return src([
         'node_modules/jquery/dist/jquery.min.js',
-        'node_modules/popper.js/dist/umd/popper.min.js',
-        'node_modules/bootstrap/dist/js/bootstrap.min.js',
-        'src/js/*.js'
+        'node_modules/popper.js/dist/umd/popper.js',     // ❗ не минифицированная версия
+        'node_modules/bootstrap/dist/js/bootstrap.js'     // ❗ без .min.js для корректного Popper
     ])
+        .pipe(concat('vendor.js'))
+        .pipe(dest('dist/js'));
+}
+
+// ========================
+//       CUSTOM SCRIPTS
+// ========================
+function appScripts() {
+    return src(paths.js)
         .pipe(babel({ presets: ['@babel/preset-env'] }))
+        .pipe(terser())
         .pipe(concat('main.js'))
-        .pipe(uglify())
         .pipe(dest('dist/js'))
         .pipe(browserSync.stream());
 }
 
-// Images
+// Объединяем в одну задачу
+const scripts = parallel(vendorScripts, appScripts);
+
+// ========================
+//        IMAGES
+// ========================
 function images() {
-    return src('src/img/**/*.*')
+    return src(paths.images)
         .pipe(newer('dist/img'))
         .pipe(imagemin())
         .pipe(dest('dist/img'));
 }
 
-// Webp
+// WebP
 function webpImages() {
-    return src('src/img/**/*.*')
+    return src(paths.images)
         .pipe(newer('dist/img'))
         .pipe(webp())
         .pipe(dest('dist/img'));
 }
 
-// SVG Sprite
+// ========================
+//        SVG SPRITE
+// ========================
 function sprite() {
-    return src('src/svg/*.svg')
+    return src(paths.svg)
         .pipe(svgSprite({
-            mode: {
-                stack: { sprite: '../sprite.svg' }
-            }
+            mode: { stack: { sprite: '../sprite.svg' } }
         }))
         .pipe(dest('dist/img'));
 }
 
-// Clean
+// ========================
+//          CLEAN
+// ========================
 function clean() {
-    return deleteAsync(['dist']);
+    return del(['dist']);
 }
 
-// Live Server
+// ========================
+//          SERVER
+// ========================
 function serve() {
     browserSync.init({
         server: { baseDir: 'dist' },
@@ -106,18 +140,31 @@ function serve() {
 
     watch('src/html/**/*.html', html);
     watch('src/scss/**/*.scss', styles);
-    watch('src/js/**/*.js', scripts);
+    watch('src/js/**/*.js', appScripts);
     watch('src/img/**/*.*', images);
     watch('src/svg/*.svg', sprite);
+    watch('src/fonts/*.ttf', fonts);
 }
 
+// ========================
+//         EXPORTS
+// ========================
 exports.html = html;
 exports.styles = styles;
 exports.scripts = scripts;
 exports.images = images;
 exports.webpImages = webpImages;
 exports.sprite = sprite;
+exports.fonts = fonts;
 exports.clean = clean;
 
-exports.build = series(clean, parallel(html, styles, scripts, images, webpImages, sprite));
-exports.default = series(clean, parallel(html, styles, scripts, images, webpImages, sprite), serve);
+exports.build = series(
+    clean,
+    parallel(html, styles, scripts, images, webpImages, sprite, fonts)
+);
+
+exports.default = series(
+    clean,
+    parallel(html, styles, scripts, images, webpImages, sprite, fonts),
+    serve
+);

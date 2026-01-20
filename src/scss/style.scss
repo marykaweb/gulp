@@ -1,10 +1,10 @@
-@use 'base/fonts';
-@use 'base/reset';
-@use 'base/base';
+@import 'base/fonts';
 
-@use 'layout/header';
-@use 'layout/footer';
+@import 'bootstrap/scss/bootstrap';
 
-@use 'components/buttons';
+@import 'base/reset';
+@import 'base/base';
 
-@import "bootstrap/scss/bootstrap";
+@import 'components/buttons';
+@import 'layout/header';
+@import 'layout/footer';
