@@ -13,3 +13,25 @@
   <br>
   🧱 Подходит для лендингов, многостраничников и шаблонов
 </p>
+
+## ✨ Возможности
+
+✔️ Gulp 4  
+✔️ SCSS (Sass)  
+✔️ Bootstrap 4.6.2  
+✔️ jQuery + Popper.js  
+✔️ Babel (ES6 → ES5)  
+✔️ Autoprefixer  
+✔️ Минификация CSS / JS  
+✔️ Оптимизация изображений  
+✔️ WebP  
+✔️ SVG-спрайты  
+✔️ HTML include (`@@include`)  
+✔️ BrowserSync (live reload)
+
+## 🚀 Как запустить?
+
+### 1️⃣ Установка зависимостей
+```bash
+npm install
+
