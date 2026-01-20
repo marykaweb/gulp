@@ -34,11 +34,14 @@
 ### Установка зависимостей
 ```bash
 npm install
+```
 
 ### Режим разработки
 ```bash
 npm run dev
+```
 
 ### Продакшен
 ```bash
 npm run build
+```
